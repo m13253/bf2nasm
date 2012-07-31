@@ -1,6 +1,6 @@
 
 CC = gcc
-CCFLAGS = -Wall -Werror -O3 -g3
+CFLAGS = -Wall -Werror -O3 -g3
 
 .PHONY: all clean cleanall debug install uninstall
 
