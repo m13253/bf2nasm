@@ -4,7 +4,7 @@ Brainfuck to nasm compiler<br>
 ## Have a try!
 Just clone this repo, and do what you want!
 
-	$ git clone https://github.com/cjxgm/bf2nasm.git
+	$ git clone https://github.com/m13253/bf2nasm.git
 
 ### Compile
 
