@@ -1,14 +1,12 @@
 
 CC = gcc
-CCFLAGS = -Wall -Werror -O2
+CCFLAGS = -Wall -Werror -O3
 
 .PHONY: all clean cleanall debug install uninstall
 
 all: bf2nasm
 clean:
-	rm -f *.o
-	rm -f awib.asm
-	rm -f awib
+	rm -f *.o awib.asm awib
 cleanall: clean
 	rm -f bf2nasm
 debug: all
