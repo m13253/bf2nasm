@@ -1,0 +1,4 @@
+*.o
+awib.asm
+awib
+bf2nasm
