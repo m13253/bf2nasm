@@ -31,9 +31,9 @@ struct registers {
     unsigned long int esi;
     long int edioffset;
     long int pedi;
-    int pediabs;
-    unsigned char known;
-    unsigned char changed;
+    int pediabs;           /* is pedi absolute */
+    unsigned char known;   /* eax thru esi */
+    unsigned char changed; /* all regs */
 };
 
 /* registers.known */
@@ -89,12 +89,17 @@ int pop_buffer(void)
 {
     if(buffer_length)
     {
+        register int tmp=buffer[buffer_pointer++];
         --buffer_length;
-        return buffer[buffer_pointer++];
+        if(buffer_pointer>=BUFLEN)
+            buffer_pointer-=BUFLEN;
+        return tmp;
     }
     else
         return EOF;
 }
+
+void print_buffer(void);
 
 int fill_buffer(void)
 {
@@ -103,11 +108,12 @@ int fill_buffer(void)
     {
         register int tmp=getc(stdin);
         if(tmp==EOF)
-            return tmp;
+            return count;
         if(tmp=='+' || tmp=='-' || tmp=='>' || tmp=='<' || tmp=='[' || tmp==']' || tmp==',' || tmp=='.')
         {
             push_buffer(tmp);
             ++count;
+            print_buffer();
         }
     }
     return count;
@@ -143,14 +149,14 @@ void print_buffer(void)
         {printf("\tmov\tesi, %lu\n", registers.esi); registers.changed &= ~RG_ESI;}\
 }
 #define push_edi() {\
-    if((registers.known & RG_EDI) && (registers.changed & RG_EDI) && registers.edioffset)\
+    if((registers.changed & RG_EDI) && registers.edioffset)\
     {\
         printf("\t%s\tedi, %lu\n", registers.edioffset>=0 ? "add" : "sub", registers.edioffset);\
         registers.changed &= ~RG_EDI; registers.edioffset=0;\
     }\
 }
 #define push_pedi() {\
-    if((registers.known & RG_PEDI) && (registers.changed & RG_PEDI))\
+    if(registers.changed & RG_PEDI)\
         if(registers.pediabs)\
             {printf("\tmov\tbyte [edi], %lu\n", registers.pedi); registers.changed &= ~RG_PEDI;}\
         else if(registers.pedi)\
@@ -175,23 +181,34 @@ void process(void)
 {
     register int tmp;
     tmp=pop_buffer();
+    fprintf(stderr, "Got %c\n", tmp);
     switch(tmp)
     {
         case '+':
+            fputc('+', stderr);
             push_edi();
             ++registers.pedi;
+            registers.changed |= RG_PEDI;
             break;
         case '-':
+            fputc('-', stderr);
             push_edi();
             --registers.pedi;
+            registers.changed |= RG_PEDI;
             break;
         case '>':
+            fputc('>', stderr);
             push_pedi();
             ++registers.edioffset;
+            registers.pediabs = 0;
+            registers.changed |= RG_EDI;
             break;
         case '<':
+            fputc('<', stderr);
             push_pedi();
             --registers.edioffset;
+            registers.pediabs = 0;
+            registers.changed |= RG_EDI;
             break;
     }
 }
@@ -211,11 +228,9 @@ int main(void)
         "\tmov\tedi, mem\n",
         stdout);
 
-    while(fill_buffer()!=EOF)
-    {
-        if(buffer_length>=BUFLEN)
-            process();
-    }
+    while(fill_buffer())
+        process();
+    print_buffer();
     if(buffer_length)
         process();
 
