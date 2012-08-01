@@ -327,7 +327,7 @@ void process(void)
             break;
         case ']':
             registers.known |= RG_PEDI;
-            registers.changed &= ~RG_PEDI
+            registers.changed &= ~RG_PEDI;
             registers.pediabs = 1;
             break;
     }
