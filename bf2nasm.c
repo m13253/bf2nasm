@@ -56,7 +56,7 @@ struct registers registers = {
     /* edi */ 0,
     /* pedi */ 0,
     /* pediabs */1,
-    /* known */ 0
+    /* known */ 0,
     /* changed */ 0
 };
 char buffer[BUFLEN] = "";
@@ -98,15 +98,19 @@ int pop_buffer(void)
 
 int fill_buffer(void)
 {
+    register size_t count=0;
     while(buffer_length<BUFLEN)
     {
         register int tmp=getc(stdin);
         if(tmp==EOF)
             return tmp;
         if(tmp=='+' || tmp=='-' || tmp=='>' || tmp=='<' || tmp=='[' || tmp==']' || tmp==',' || tmp=='.')
+        {
             push_buffer(tmp);
-        print_buffer();
+            ++count;
+        }
     }
+    return count;
 }
 
 void print_buffer(void)
@@ -139,27 +143,29 @@ void print_buffer(void)
         {printf("\tmov\tesi, %lu\n", registers.esi); registers.changed &= ~RG_ESI;}\
 }
 #define push_edi() {\
-    if((registers.known & RG_EDI) && (registers.changed & RG_EDI) && registers.edi)\
+    if((registers.known & RG_EDI) && (registers.changed & RG_EDI) && registers.edioffset)\
     {\
-        printf("\t%s\tedi, %lu\n", registers.edx>=0 ? "add" : "sub", registers.edi);\
-        registers.changed &= ~RG_EDI; registers.edi=0;\
+        printf("\t%s\tedi, %lu\n", registers.edioffset>=0 ? "add" : "sub", registers.edioffset);\
+        registers.changed &= ~RG_EDI; registers.edioffset=0;\
     }\
 }
 #define push_pedi() {\
     if((registers.known & RG_PEDI) && (registers.changed & RG_PEDI))\
         if(registers.pediabs)\
-            {printf("\tmov\tbyte [edi], %lu\n", registers.edi); registers.changed &= ~RG_PEDI;}\
+            {printf("\tmov\tbyte [edi], %lu\n", registers.pedi); registers.changed &= ~RG_PEDI;}\
         else if(registers.pedi)\
         {\
-            printf("\t%s\tbyte [edi], %lu\n", registers.edx>=0 ? "add" : "sub", registers.pedi);\
-            registers.changed &= ~RG_PEDI; registers.edi=0;\
+            printf("\t%s\tbyte [edi], %lu\n", registers.pedi>=0 ? "add" : "sub", registers.pedi);\
+            registers.changed &= ~RG_PEDI; registers.pedi=0;\
         }\
+        else;\
+    else;\
 }
 
 int match(const char *str, size_t offset)
 {
     register char tmp;
-    while(tmp=*(str++))
+    while((tmp=*(str++)))
         if(read_buffer(offset++)!=tmp)
             return 0;
     return 1;
@@ -173,11 +179,11 @@ void process(void)
     {
         case '+':
             push_edi();
-            ++registers.pedioffset;
+            ++registers.pedi;
             break;
         case '-':
             push_edi();
-            --registers.pedioffset;
+            --registers.pedi;
             break;
         case '>':
             push_pedi();
