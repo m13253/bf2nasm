@@ -102,6 +102,7 @@ int pop_buffer(void)
         --buffer_length;
         while(buffer_pointer>=BUFLEN)
             buffer_pointer-=BUFLEN;
+        ++filepos;
         return tmp;
     }
     else
@@ -117,6 +118,7 @@ int dump_buffer(size_t count)
         buffer_pointer+=count;
         while(buffer_pointer>=BUFLEN)
             buffer_pointer-=BUFLEN;
+        filepos+=count;
         return count;
     }
     else
@@ -126,6 +128,7 @@ int dump_buffer(size_t count)
         buffer_length=0;
         while(buffer_pointer>=BUFLEN)
             buffer_pointer-=BUFLEN;
+        filepos+=len;
         return len;
     }
 }
