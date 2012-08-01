@@ -63,6 +63,7 @@ struct registers registers = {
 char buffer[BUFLEN] = "";
 size_t buffer_pointer = 0;
 size_t buffer_length = 0;
+size_t filepos = 0;
 unsigned int loops[0x10000] = {0};
 unsigned int nloop = 0;
 unsigned int ploop = 0;
@@ -223,7 +224,6 @@ void print_buffer(void)
     }\
 }
 #define push_pedi() {\
-    push_edi();\
     if(registers.changed & RG_PEDI)\
         if(registers.pediabs)\
             {printf("\tmov\tbyte [edi], %u\n", (unsigned char) registers.pedi); registers.changed &= ~RG_PEDI;}\
@@ -276,12 +276,14 @@ void process(void)
             ++registers.edioffset;
             registers.pediabs = 0;
             registers.changed |= RG_EDI;
+            registers.pedi = 0;
             break;
         case '<':
             push_pedi();
             --registers.edioffset;
             registers.pediabs = 0;
             registers.changed |= RG_EDI;
+            registers.pedi = 0;
             break;
         case ',':
             if(!(registers.known & RG_EAX) || registers.eax!=3)
@@ -335,6 +337,7 @@ void process(void)
             registers.known &= ~RG_ECX;
             registers.changed &= ~RG_ECX;
             push_pedi();
+            push_edi();
             fputs("\tmov\tecx, edi\n", stdout);
             if(!(registers.known & RG_EDX) || registers.edx!=1)
             {
@@ -350,9 +353,16 @@ void process(void)
             break;
         case '[':
             if((registers.known & RG_PEDI) && registers.pediabs && !registers.pedi)
+            {
+                register unsigned int bralevel = 1;
                 do
+                {
                     tmp=pop_buffer();
-                while(tmp!=']' && tmp!=EOF);
+                    if(tmp=='[') ++bralevel;
+                    else if(tmp==']') --bralevel;
+                }
+                while(bralevel && tmp!=EOF);
+            }
             else if(read_buffer(0)==']')
                 if((registers.known & RG_PEDI) && registers.pediabs && registers.pedi)
                 {
@@ -364,7 +374,8 @@ void process(void)
                 else
                 {
                     push_pedi();
-                    printf("cmp\tbyte[edi], 0\n\tje\te%u\nb%u:\n\tjmp\tb%u\ne%u:\n", nloop+1, nloop+1, nloop+1, nloop+1);
+                    push_edi();
+                    printf("\tcmp\tbyte [edi], 0\n\tje\te%u\nb%u:\n\tjmp\tb%u\ne%u:\n", nloop+1, nloop+1, nloop+1, nloop+1);
                     registers.known |= RG_PEDI;
                     registers.changed &= ~RG_PEDI;
                     registers.pediabs = 1;
@@ -381,6 +392,7 @@ void process(void)
             else
             {
                 push_pedi();
+                push_edi();
                 loops[ploop]=nloop++;
                 printf("b%u:\n\tcmp\tbyte [edi], 0\n\tje\te%u\n", loops[ploop], loops[ploop]);
                 ++ploop;
@@ -394,6 +406,7 @@ void process(void)
             }
             --ploop;
             push_pedi();
+            push_edi();
             printf("\tjmp\tb%u\ne%u:\n", loops[ploop], loops[ploop]);
             registers.known |= RG_PEDI;
             registers.changed &= ~RG_PEDI;
