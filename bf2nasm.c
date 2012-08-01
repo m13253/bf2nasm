@@ -137,19 +137,43 @@ void print_buffer(void)
 
 #define push_eax() {\
     if((registers.known & RG_EAX) && (registers.changed & RG_EAX))\
-        {printf("\tmov\teax, %lu\n", registers.eax); registers.changed &= ~RG_EAX;}\
+    {\
+        if(registers.eax)\
+            printf("\tmov\teax, %lu\n", registers.eax);\
+        else\
+            printf("\txor\teax, eax\n");\
+        registers.changed &= ~RG_EAX;\
+    }\
 }
 #define push_ebx() {\
     if((registers.known & RG_EBX) && (registers.changed & RG_EBX))\
-        {printf("\tmov\tebx, %lu\n", registers.ebx); registers.changed &= ~RG_EBX;}\
+    {\
+        if(registers.ebx)\
+            printf("\tmov\tebx, %lu\n", registers.ebx);\
+        else\
+            printf("\txor\tebx, ebx\n");\
+        registers.changed &= ~RG_EBX;\
+    }\
 }
 #define push_ecx() {\
     if((registers.known & RG_ECX) && (registers.changed & RG_ECX))\
-        {printf("\tmov\tecx, %lu\n", registers.ecx); registers.changed &= ~RG_ECX;}\
+    {\
+        if(registers.ecx)\
+            printf("\tmov\tecx, %lu\n", registers.ecx);\
+        else\
+            printf("\txor\tecx, ecx\n");\
+        registers.changed &= ~RG_ECX;\
+    }\
 }
 #define push_edx() {\
     if((registers.known & RG_EDX) && (registers.changed & RG_EDX))\
-        {printf("\tmov\tedx, %lu\n", registers.edx); registers.changed &= ~RG_EDX;}\
+    {\
+        if(registers.edx)\
+            printf("\tmov\tedx, %lu\n", registers.edx);\
+        else\
+            printf("\txor\tedx, edx\n");\
+        registers.changed &= ~RG_EDX;\
+    }\
 }
 #define push_esi() {\
     if((registers.known & RG_ESI) && (registers.changed & RG_ESI))\
@@ -207,7 +231,6 @@ void process(void)
 {
     register int tmp;
     tmp=pop_buffer();
-    fprintf(stderr, "Got %c\n", tmp);
     switch(tmp)
     {
         case '+':
@@ -232,7 +255,85 @@ void process(void)
             registers.pediabs = 0;
             registers.changed |= RG_EDI;
             break;
+        case ',':
+            if(!(registers.known & RG_EAX) || registers.eax!=3)
+            {
+                registers.eax=3;
+                registers.known |= RG_EAX;
+                registers.changed |= RG_EAX;
+                push_eax();
+            }
+            if(!(registers.known & RG_EBX) || registers.ebx!=0)
+            {
+                registers.ebx=0;
+                registers.known |= RG_EBX;
+                registers.changed |= RG_EBX;
+                push_ebx();
+            }
+            registers.known &= ~RG_ECX;
+            registers.changed |= RG_ECX;
+            fputs("\tmov\tecx, edi\n", stdout);
+            if(!(registers.known & RG_EDX) || registers.edx!=1)
+            {
+                registers.edx=1;
+                registers.known |= RG_EDX;
+                registers.changed |= RG_EDX;
+                push_edx();
+            }
+            fputs("\tint\t80h\n", stdout);
+            registers.known &= ~RG_EAX;
+            registers.changed |= RG_EAX;
+            break;
+        case '.':
+            if(!(registers.known & RG_EAX) || registers.eax!=4)
+            {
+                registers.eax=4;
+                registers.known |= RG_EAX;
+                registers.changed |= RG_EAX;
+                push_eax();
+            }
+            if(!(registers.known & RG_EBX) || registers.ebx!=1)
+            {
+                registers.ebx=1;
+                registers.known |= RG_EBX;
+                registers.changed |= RG_EBX;
+                push_ebx();
+            }
+            registers.known &= ~RG_ECX;
+            registers.changed |= RG_ECX;
+            fputs("\tmov\tecx, edi\n", stdout);
+            if(!(registers.known & RG_EDX) || registers.edx!=1)
+            {
+                registers.edx=1;
+                registers.known |= RG_EDX;
+                registers.changed |= RG_EDX;
+                push_edx();
+            }
+            fputs("\tint\t80h\n", stdout);
+            registers.known &= ~RG_EAX;
+            registers.known &= ~RG_EAX;
+            registers.changed |= RG_EAX;
+            break;
     }
+}
+
+void finish(void)
+{
+    if(!(registers.known & RG_EAX) || registers.eax!=1)
+    {
+        registers.eax=1;
+        registers.known |= RG_EAX;
+        registers.changed |= RG_EAX;
+        push_eax();
+    }
+    if(!(registers.known & RG_EBX) || registers.ebx!=0)
+    {
+        registers.ebx=0;
+        registers.known |= RG_EBX;
+        registers.changed |= RG_EBX;
+        push_ebx();
+    }
+    fputs("\tint\t80h\n", stdout);
 }
 
 int main(void)
@@ -252,6 +353,8 @@ int main(void)
 
     while(buffer_length || fill_buffer())
         process();
+
+    finish();
 
     return 0;
 }
