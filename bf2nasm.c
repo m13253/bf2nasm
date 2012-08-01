@@ -406,7 +406,7 @@ void process(void)
         case ']':
             if(ploop<=0)
             {
-                fputs("Fatal: Unmatched brackets.\n", stderr);
+                fprintf(stderr, "Fatal: %zu: Operation expected but got ‘]’.\n", filepos);
                 exit(1);
             }
             --ploop;
@@ -425,7 +425,7 @@ void finish(void)
 {
     if(ploop!=0)
     {
-        fputs("Fatal: Unmatched brackets.\n", stderr);
+        fprintf(stderr, "Fatal: %zu: ‘]’ expected but got EOF.\n", filepos);
         exit(1);
     }
     if(!(registers.known & RG_EAX) || registers.eax!=1)
