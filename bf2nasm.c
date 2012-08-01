@@ -30,15 +30,20 @@ struct registers {
     unsigned long int edx;
     unsigned long int esi;
     long int edioffset;
+    long int pedi;
+    int pediabs;
     unsigned char known;
+    unsigned char changed;
 };
 
 /* registers.known */
-#define RK_EAX 1
-#define RK_EBX 2
-#define RK_ECX 4
-#define RK_EDX 8
-#define RK_ESI 16
+#define RG_EAX 1
+#define RG_EBX 2
+#define RG_ECX 4
+#define RG_EDX 8
+#define RG_ESI 16
+#define RG_EDI 32
+#define RG_PEDI 64
 
 /* Initialize the registers here.
    using 0xcc... rather than 0x00... is better for debugging */
@@ -49,7 +54,10 @@ struct registers registers = {
     /* edx */ 0xccccccccUL,
     /* esi */ 0xccccccccUL,
     /* edi */ 0,
+    /* pedi */ 0,
+    /* pediabs */1,
     /* known */ 0
+    /* changed */ 0
 };
 char buffer[BUFLEN] = "";
 size_t buffer_pointer = 0;
@@ -88,6 +96,19 @@ int pop_buffer(void)
         return EOF;
 }
 
+int fill_buffer(void)
+{
+    while(buffer_length<BUFLEN)
+    {
+        register int tmp=getc(stdin);
+        if(tmp==EOF)
+            return tmp;
+        if(tmp=='+' || tmp=='-' || tmp=='>' || tmp=='<' || tmp=='[' || tmp==']' || tmp==',' || tmp=='.')
+            push_buffer(tmp);
+        print_buffer();
+    }
+}
+
 void print_buffer(void)
 {
     register int _i;
@@ -97,10 +118,76 @@ void print_buffer(void)
     fputc('\n', stderr);
 }
 
+#define push_eax() {\
+    if((registers.known & RG_EAX) && (registers.changed & RG_EAX))\
+        {printf("\tmov\teax, %lu\n", registers.eax); registers.changed &= ~RG_EAX;}\
+}
+#define push_ebx() {\
+    if((registers.known & RG_EBX) && (registers.changed & RG_EBX))\
+        {printf("\tmov\tebx, %lu\n", registers.ebx); registers.changed &= ~RG_EBX;}\
+}
+#define push_ecx() {\
+    if((registers.known & RG_ECX) && (registers.changed & RG_ECX))\
+        {printf("\tmov\tecx, %lu\n", registers.ecx); registers.changed &= ~RG_ECX;}\
+}
+#define push_edx() {\
+    if((registers.known & RG_EDX) && (registers.changed & RG_EDX))\
+        {printf("\tmov\tedx, %lu\n", registers.edx); registers.changed &= ~RG_EDX;}\
+}
+#define push_esi() {\
+    if((registers.known & RG_ESI) && (registers.changed & RG_ESI))\
+        {printf("\tmov\tesi, %lu\n", registers.esi); registers.changed &= ~RG_ESI;}\
+}
+#define push_edi() {\
+    if((registers.known & RG_EDI) && (registers.changed & RG_EDI) && registers.edi)\
+    {\
+        printf("\t%s\tedi, %lu\n", registers.edx>=0 ? "add" : "sub", registers.edi);\
+        registers.changed &= ~RG_EDI; registers.edi=0;\
+    }\
+}
+#define push_pedi() {\
+    if((registers.known & RG_PEDI) && (registers.changed & RG_PEDI))\
+        if(registers.pediabs)\
+            {printf("\tmov\tbyte [edi], %lu\n", registers.edi); registers.changed &= ~RG_PEDI;}\
+        else if(registers.pedi)\
+        {\
+            printf("\t%s\tbyte [edi], %lu\n", registers.edx>=0 ? "add" : "sub", registers.pedi);\
+            registers.changed &= ~RG_PEDI; registers.edi=0;\
+        }\
+}
+
+int match(const char *str, size_t offset)
+{
+    register char tmp;
+    while(tmp=*(str++))
+        if(read_buffer(offset++)!=tmp)
+            return 0;
+    return 1;
+}
+
 void process(void)
 {
     register int tmp;
     tmp=pop_buffer();
+    switch(tmp)
+    {
+        case '+':
+            push_edi();
+            ++registers.pedioffset;
+            break;
+        case '-':
+            push_edi();
+            --registers.pedioffset;
+            break;
+        case '>':
+            push_pedi();
+            ++registers.edioffset;
+            break;
+        case '<':
+            push_pedi();
+            --registers.edioffset;
+            break;
+    }
 }
 
 int main(void)
@@ -118,16 +205,11 @@ int main(void)
         "\tmov\tedi, mem\n",
         stdout);
 
-    do
+    while(fill_buffer()!=EOF)
     {
-        register int tmp=getc(stdin);
-        if(tmp=='+' || tmp=='-' || tmp=='>' || tmp=='<' || tmp=='[' || tmp==']' || tmp==',' || tmp=='.')
-            push_buffer(tmp);
-        print_buffer();
         if(buffer_length>=BUFLEN)
             process();
     }
-    while(tmp!=EOF);
     if(buffer_length)
         process();
 
