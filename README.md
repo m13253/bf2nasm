@@ -54,6 +54,6 @@ I used `putchar` and `getchar`, so we have to link to C runtime library.
 	gcc -o "$BFOUT" "$BFOUT.o"
 
 ## License
-Licensed under GPLv2.<br>
+Licensed under LGPLv3.<br>
 *ABSOLUTELY NO WARRANTY!*
 
