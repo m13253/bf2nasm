@@ -30,7 +30,7 @@ struct registers {
     unsigned long int edx;
     unsigned long int esi;
     long int edioffset;
-    long int pedi;
+    signed char pedi;
     int pediabs;           /* is pedi absolute or relative */
     unsigned char known;   /* eax thru esi */
     unsigned char changed; /* all regs */
@@ -63,8 +63,11 @@ char buffer[BUFLEN] = "";
 size_t buffer_pointer = 0;
 size_t buffer_length = 0;
 
+int fill_buffer(void);
+
 int read_buffer(const size_t register offset)
 {
+    fill_buffer();
     if(buffer_length>offset)
         if(buffer_pointer+offset<BUFLEN)
             return buffer[buffer_pointer+offset];
@@ -87,6 +90,7 @@ int push_buffer(const char ch)
 
 int pop_buffer(void)
 {
+    fill_buffer();
     if(buffer_length)
     {
         register int tmp=buffer[buffer_pointer++];
@@ -99,21 +103,24 @@ int pop_buffer(void)
         return EOF;
 }
 
-void print_buffer(void);
-
 int fill_buffer(void)
 {
     register size_t count=0;
+    static int is_EOF=0;
+    if(is_EOF)
+        return count;
     while(buffer_length<BUFLEN)
     {
         register int tmp=getc(stdin);
         if(tmp==EOF)
+        {
+            is_EOF=1;
             return count;
+        }
         if(tmp=='+' || tmp=='-' || tmp=='>' || tmp=='<' || tmp=='[' || tmp==']' || tmp==',' || tmp=='.')
         {
             push_buffer(tmp);
             ++count;
-            print_buffer();
         }
     }
     return count;
@@ -151,18 +158,37 @@ void print_buffer(void)
 #define push_edi() {\
     if((registers.changed & RG_EDI) && registers.edioffset)\
     {\
-        printf("\t%s\tedi, %lu\n", registers.edioffset>=0 ? "add" : "sub", registers.edioffset);\
+        if(registers.edioffset>=0)\
+            if(registers.edioffset==1)\
+                printf("\tinc\tedi\n");\
+            else\
+                printf("\tadd\tedi, %ld\n", registers.edioffset);\
+        else\
+            if(registers.edioffset==-1)\
+                printf("\tdec\tedi\n");\
+            else\
+                printf("\tsub\tedi, %ld\n", -registers.edioffset);\
         registers.changed &= ~RG_EDI; registers.edioffset=0;\
     }\
 }
 #define push_pedi() {\
     if(registers.changed & RG_PEDI)\
         if(registers.pediabs)\
-            {printf("\tmov\tbyte [edi], %lu\n", registers.pedi); registers.changed &= ~RG_PEDI;}\
+            {printf("\tmov\tbyte [edi], %u\n", (unsigned char) registers.pedi); registers.changed &= ~RG_PEDI;}\
         else if(registers.pedi)\
         {\
-            printf("\t%s\tbyte [edi], %lu\n", registers.pedi>=0 ? "add" : "sub", registers.pedi);\
-            registers.changed &= ~RG_PEDI; registers.pedi=0;\
+            if(registers.pedi>=0)\
+                if(registers.pedi==1)\
+                    printf("\tinc\tbyte [edi]\n");\
+                else\
+                    printf("\tadd\tbyte [edi], %d\n", registers.pedi);\
+            else\
+                if(registers.pedi==-1)\
+                    printf("\tdec\tbyte [edi]\n");\
+                else\
+                    printf("\tsub\tbyte [edi], %d\n", -registers.pedi);\
+            registers.changed &= ~RG_PEDI;\
+            if(!registers.pediabs) registers.pedi=0;\
         }\
         else;\
     else;\
@@ -185,26 +211,22 @@ void process(void)
     switch(tmp)
     {
         case '+':
-            fputc('+', stderr);
             push_edi();
             ++registers.pedi;
             registers.changed |= RG_PEDI;
             break;
         case '-':
-            fputc('-', stderr);
             push_edi();
             --registers.pedi;
             registers.changed |= RG_PEDI;
             break;
         case '>':
-            fputc('>', stderr);
             push_pedi();
             ++registers.edioffset;
             registers.pediabs = 0;
             registers.changed |= RG_EDI;
             break;
         case '<':
-            fputc('<', stderr);
             push_pedi();
             --registers.edioffset;
             registers.pediabs = 0;
@@ -228,10 +250,7 @@ int main(void)
         "\tmov\tedi, mem\n",
         stdout);
 
-    while(fill_buffer())
-        process();
-    print_buffer();
-    if(buffer_length)
+    while(buffer_length || fill_buffer())
         process();
 
     return 0;
