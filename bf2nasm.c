@@ -427,6 +427,7 @@ void process(void)
                 registers.pediabs = 0;
                 registers.pedi = 0;
                 ++ploop;
+                registers.known &= ~RG_EAX & ~RG_EBX & ~RG_EDX;
             }
             break;
         case ']':
