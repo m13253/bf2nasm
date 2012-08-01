@@ -435,7 +435,7 @@ void process(void)
             printf("\tjmp\tb%u\ne%u:\t\t\t\t; Level %u }\n", loops[ploop], loops[ploop], ploop+1);
             registers.known |= RG_PEDI;
             registers.changed &= ~RG_PEDI;
-            registers.pediabs = 0;
+            registers.pediabs = 1;
             registers.pedi = 0;
             break;
     }
