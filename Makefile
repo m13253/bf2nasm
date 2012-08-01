@@ -1,5 +1,8 @@
 
 CC = gcc
+NASM = nasm
+LD = ld
+RM = rm
 CFLAGS = -Wall -Werror -O3 -g3
 
 .PHONY: all clean cleanall debug install uninstall
@@ -7,13 +10,16 @@ CFLAGS = -Wall -Werror -O3 -g3
 all: bf2nasm
 
 clean:
-	rm -f *.o awib.asm awib bf2nasm
+	$(RM) -f *.o *.asm awib bf2nasm
 
-debug: all
-	./bf2nasm < awib.b > awib.asm
-	nasm -o awib.o -f elf32 awib.asm
-	ld -melf_i386 -o awib awib.o
-	./awib < awib.b
+.b.asm:
+	./bf2nasm < $< > $@
+
+.asm.o:
+	$(NASM) -f elf32 -o $@ $<
+
+.o:
+	$(LD) -m elf_i386 -o $@ $<
 
 install: all
 	cp ./bf2nasm /usr/local/bin/bf2nasm
