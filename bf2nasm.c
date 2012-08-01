@@ -382,6 +382,7 @@ void process(void)
                     registers.changed |= RG_PEDI;
                     registers.pediabs = 1;
                     registers.pedi = 0;
+                    pop_buffer();
                 }
             else if(match("-]", 0) || match("+]", 0))
             {
