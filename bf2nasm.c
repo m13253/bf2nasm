@@ -27,9 +27,9 @@
 struct registers {
     unsigned long int eax;
     unsigned long int ebx;
-    unsigned long int ecx;
+    int ecx_is_edi;
     unsigned long int edx;
-    unsigned long int esi;
+    int esi_is_edi;
     long int edioffset;
     signed char pedi;
     int pediabs;           /* is pedi absolute or relative */
@@ -51,9 +51,9 @@ struct registers {
 struct registers registers = {
     /* eax */ 0xccccccccUL,
     /* ebx */ 0xccccccccUL,
-    /* ecx */ 0xccccccccUL,
+    /* ecx */ 0,
     /* edx */ 0xccccccccUL,
-    /* esi */ 0xccccccccUL,
+    /* esi */ 0,
     /* edi */ 0,
     /* pedi */ 0,
     /* pediabs */1,
@@ -185,16 +185,6 @@ void print_buffer(void)
         registers.changed &= ~RG_EBX;\
     }\
 }
-#define push_ecx() {\
-    if((registers.known & RG_ECX) && (registers.changed & RG_ECX))\
-    {\
-        if(registers.ecx)\
-            printf("\tmov\tecx, %lu\n", registers.ecx);\
-        else\
-            printf("\txor\tecx, ecx\n");\
-        registers.changed &= ~RG_ECX;\
-    }\
-}
 #define push_edx() {\
     if((registers.known & RG_EDX) && (registers.changed & RG_EDX))\
     {\
@@ -280,6 +270,7 @@ void process(void)
             registers.pediabs = 0;
             registers.changed |= RG_EDI;
             registers.pedi = 0;
+            registers.ecx_is_edi = 0;
             break;
         case '<':
             push_pedi();
@@ -287,6 +278,7 @@ void process(void)
             registers.pediabs = 0;
             registers.changed |= RG_EDI;
             registers.pedi = 0;
+            registers.ecx_is_edi = 0;
             break;
         case ',':
             if(!(registers.known & RG_EAX) || registers.eax!=3)
@@ -306,7 +298,11 @@ void process(void)
             registers.known &= ~RG_ECX;
             registers.changed &= ~RG_ECX;
             push_edi();
-            fputs("\tmov\tecx, edi\n", stdout);
+            if(!registers.ecx_is_edi)
+            {
+                fputs("\tmov\tecx, edi\n", stdout);
+                registers.ecx_is_edi=1;
+            }
             if(!(registers.known & RG_EDX) || registers.edx!=1)
             {
                 registers.edx=1;
@@ -341,7 +337,11 @@ void process(void)
             registers.changed &= ~RG_ECX;
             push_edi();
             push_pedi();
-            fputs("\tmov\tecx, edi\n", stdout);
+            if(!registers.ecx_is_edi)
+            {
+                fputs("\tmov\tecx, edi\n", stdout);
+                registers.ecx_is_edi=1;
+            }
             if(!(registers.known & RG_EDX) || registers.edx!=1)
             {
                 registers.edx=1;
