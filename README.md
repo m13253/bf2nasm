@@ -1,5 +1,5 @@
 # bf2nasm
-Brainfuck to nasm compiler<br>
+Brainfuck to nasm compiler
 
 ## Have a try!
 Just clone this repo, and do what you want!
@@ -21,7 +21,7 @@ and `bf2nasm`.
 	$ make clean
 
 ### Compile your own brainfuck program:
-bf2nasm takes stdin as its input, and output the compiled nasm source
+`bf2nasm` takes stdin as its input, and output the compiled nasm source
 code to stdout.
 
 	$ # make sure you have already compiled bf2nasm, if not, type:
