@@ -369,6 +369,7 @@ void process(void)
             else if(read_buffer(0)==']')
                 if((registers.known & RG_PEDI) && registers.pediabs && registers.pedi)
                 {
+                    fprintf(stderr, "Warning: %zu: Infinite loop detected.\n", filepos);
                     printf("b%u:\n\tjmp\tb%u\n", nloop, nloop);
                     ++nloop;
                     do
