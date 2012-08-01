@@ -33,8 +33,8 @@ code to stdout.
 Then you will get a well formatted nasm source code. To compile it
 into an executable file, type:
 
-	$ nasm -f elf32 -o output.o output.asm		# compile
-	$ ld -melf_i386 -o output output.o              # link
+	$ nasm -f elf32 -o output.o output.asm  # compile
+	$ ld -melf_i386 -o output output.o      # link
 
 #### Everything in one script:
 
