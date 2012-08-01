@@ -336,8 +336,8 @@ void process(void)
             }
             registers.known &= ~RG_ECX;
             registers.changed &= ~RG_ECX;
-            push_pedi();
             push_edi();
+            push_pedi();
             fputs("\tmov\tecx, edi\n", stdout);
             if(!(registers.known & RG_EDX) || registers.edx!=1)
             {
@@ -373,11 +373,10 @@ void process(void)
                 }
                 else
                 {
-                    push_pedi();
                     push_edi();
+                    push_pedi();
                     printf("\tcmp\tbyte [edi], 0\n\tje\te%u\nb%u:\n\tjmp\tb%u\ne%u:\n", nloop+1, nloop+1, nloop+1, nloop+1);
-                    registers.known |= RG_PEDI;
-                    registers.changed &= ~RG_PEDI;
+                    registers.changed |= RG_PEDI;
                     registers.pediabs = 1;
                     registers.pedi = 0;
                 }
@@ -391,10 +390,13 @@ void process(void)
             }
             else
             {
-                push_pedi();
                 push_edi();
+                push_pedi();
                 loops[ploop]=nloop++;
-                printf("b%u:\n\tcmp\tbyte [edi], 0\n\tje\te%u\n", loops[ploop], loops[ploop]);
+                printf("b%u:\t\t\t\t; Level %u {\n\tcmp\tbyte [edi], 0\n\tje\te%u\n", loops[ploop], ploop+1, loops[ploop]);
+                registers.known &= ~RG_PEDI;
+                registers.changed |= RG_PEDI;
+                registers.pediabs = 0;
                 ++ploop;
             }
             break;
@@ -405,12 +407,12 @@ void process(void)
                 exit(1);
             }
             --ploop;
-            push_pedi();
             push_edi();
-            printf("\tjmp\tb%u\ne%u:\n", loops[ploop], loops[ploop]);
+            push_pedi();
+            printf("\tjmp\tb%u\ne%u:\t\t\t\t; Level %u }\n", loops[ploop], loops[ploop], ploop+1);
             registers.known |= RG_PEDI;
             registers.changed &= ~RG_PEDI;
-            registers.pediabs = 1;
+            registers.pediabs = 0;
             registers.pedi = 0;
             break;
     }
