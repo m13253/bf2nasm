@@ -313,7 +313,7 @@ void process(void)
             fputs("\tint\t80h\n", stdout);
             registers.known &= ~RG_EAX;
             registers.changed &= ~RG_EAX;
-            printf("\tcmp\teax, 0\n\tjg e%u\n\tmov\tbyte [edi], al\ne%u:\n", nloop, nloop);
+            printf("\tcmp\teax, 0\n\tjg\te%u\n\tmov\tbyte [edi], al\ne%u:\n", nloop, nloop);
             ++nloop;
 
             registers.pediabs = 0;
