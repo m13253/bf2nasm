@@ -99,12 +99,34 @@ int pop_buffer(void)
     {
         register int tmp=buffer[buffer_pointer++];
         --buffer_length;
-        if(buffer_pointer>=BUFLEN)
+        while(buffer_pointer>=BUFLEN)
             buffer_pointer-=BUFLEN;
         return tmp;
     }
     else
         return EOF;
+}
+
+int dump_buffer(size_t count)
+{
+    fill_buffer();
+    if(buffer_length>=count)
+    {
+        buffer_length-=count;
+        buffer_pointer+=count;
+        while(buffer_pointer>=BUFLEN)
+            buffer_pointer-=BUFLEN;
+        return count;
+    }
+    else
+    {
+        register size_t len = buffer_length;
+        buffer_pointer+=buffer_length;
+        buffer_length=0;
+        while(buffer_pointer>=BUFLEN)
+            buffer_pointer-=BUFLEN;
+        return len;
+    }
 }
 
 int fill_buffer(void)
@@ -348,6 +370,14 @@ void process(void)
                     registers.pediabs = 1;
                     registers.pedi = 0;
                 }
+            else if(match("-]", 0) || match("+]", 0))
+            {
+                registers.known |= RG_PEDI;
+                registers.changed |= RG_PEDI;
+                registers.pediabs = 1;
+                registers.pedi = 0;
+                dump_buffer(2);
+            }
             else
             {
                 push_pedi();
