@@ -313,6 +313,8 @@ void process(void)
             fputs("\tint\t80h\n", stdout);
             registers.known &= ~RG_EAX;
             registers.changed &= ~RG_EAX;
+            printf("\tcmp\teax, -1\n\tjne e%u\n\tmov\tbyte [edi], al\ne%u:\n", nloop, nloop);
+            ++nloop;
 
             registers.pediabs = 0;
             registers.pedi = 0;
@@ -397,6 +399,8 @@ void process(void)
             }
             else if(match("->+<]", 0))
             {
+                push_edi();
+                push_pedi();
                 fputs("\tmov\tal, byte [edi]\n\tadd\tbyte [edi+1], al\n\txor\teax, eax\n\tmov\tbyte [edi], al\n", stdout);
                 registers.known |= RG_EAX;
                 registers.changed &= ~RG_EAX;
@@ -405,6 +409,8 @@ void process(void)
             }
             else if(match("->+>+<<]", 0))
             {
+                push_edi();
+                push_pedi();
                 fputs("\tmov\tal, byte [edi]\n\tadd\tbyte [edi+1], al\n\tadd\tbyte [edi+2], al\n\txor\teax, eax\n\tmov\tbyte [edi], al\n", stdout);
                 registers.known |= RG_EAX;
                 registers.changed &= ~RG_EAX;
