@@ -283,6 +283,10 @@ void process(void)
             fputs("\tint\t80h\n", stdout);
             registers.known &= ~RG_EAX;
             registers.changed |= RG_EAX;
+
+            registers.pediabs = 0;
+            registers.pedi = 0;
+            registers.changed &= ~RG_PEDI;
             break;
         case '.':
             if(!(registers.known & RG_EAX) || registers.eax!=4)
