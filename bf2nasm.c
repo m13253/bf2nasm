@@ -394,9 +394,9 @@ void process(void)
                 push_pedi();
                 loops[ploop]=nloop++;
                 printf("b%u:\t\t\t\t; Level %u {\n\tcmp\tbyte [edi], 0\n\tje\te%u\n", loops[ploop], ploop+1, loops[ploop]);
-                registers.known &= ~RG_PEDI;
-                registers.changed |= RG_PEDI;
+                registers.changed &= ~RG_PEDI;
                 registers.pediabs = 0;
+                registers.pedi = 0;
                 ++ploop;
             }
             break;
