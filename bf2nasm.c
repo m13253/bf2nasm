@@ -18,6 +18,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 
 /* Some consts */
 #define BUFLEN 32
@@ -56,7 +57,7 @@ struct registers registers = {
     /* edi */ 0,
     /* pedi */ 0,
     /* pediabs */1,
-    /* known */ 0,
+    /* known */ RG_EDI | RG_PEDI,
     /* changed */ 0
 };
 char buffer[BUFLEN] = "";
@@ -196,9 +197,11 @@ void print_buffer(void)
             else\
                 printf("\tsub\tedi, %ld\n", -registers.edioffset);\
         registers.changed &= ~RG_EDI; registers.edioffset=0;\
+        registers.pediabs=0; registers.changed &= ~RG_PEDI; registers.pedi=0;\
     }\
 }
 #define push_pedi() {\
+    push_edi();\
     if(registers.changed & RG_PEDI)\
         if(registers.pediabs)\
             {printf("\tmov\tbyte [edi], %u\n", (unsigned char) registers.pedi); registers.changed &= ~RG_PEDI;}\
@@ -309,7 +312,7 @@ void process(void)
             }
             registers.known &= ~RG_ECX;
             registers.changed &= ~RG_ECX;
-            push_edi();
+            push_pedi();
             fputs("\tmov\tecx, edi\n", stdout);
             if(!(registers.known & RG_EDX) || registers.edx!=1)
             {
@@ -324,17 +327,59 @@ void process(void)
             registers.changed &= ~RG_EAX;
             break;
         case '[':
+            if((registers.known & RG_PEDI) && registers.pediabs && !registers.pedi)
+                do
+                    tmp=pop_buffer();
+                while(tmp!=']' && tmp!=EOF);
+            else if(read_buffer(0)==']')
+                if((registers.known & RG_PEDI) && registers.pediabs && registers.pedi)
+                {
+                    printf("b%u:\n\tjmp\tb%u\n", nloop+1, nloop+1);
+                    do
+                        tmp=pop_buffer();
+                    while(tmp!=EOF);
+                }
+                else
+                {
+                    push_pedi();
+                    printf("cmp\tbyte[edi], 0\n\tje\te%u\nb%u:\n\tjmp\tb%u\ne%u:\n", nloop+1, nloop+1, nloop+1, nloop+1);
+                    registers.known |= RG_PEDI;
+                    registers.changed &= ~RG_PEDI;
+                    registers.pediabs = 1;
+                    registers.pedi = 0;
+                }
+            else
+            {
+                push_pedi();
+                loops[ploop]=nloop++;
+                printf("b%u:\n\tcmp\tbyte [edi], 0\n\tje\te%u\n", loops[ploop], loops[ploop]);
+                ++ploop;
+            }
             break;
         case ']':
+            if(ploop<=0)
+            {
+                fputs("Fatal: Unmatched brackets.\n", stderr);
+                exit(1);
+            }
+            --ploop;
+            push_pedi();
+            printf("\tjmp\tb%u\ne%u:\n", loops[ploop], loops[ploop]);
             registers.known |= RG_PEDI;
             registers.changed &= ~RG_PEDI;
             registers.pediabs = 1;
+            registers.pedi = 0;
             break;
     }
 }
 
 void finish(void)
 {
+    if(ploop!=0)
+    {
+        fputs("Fatal: Unmatched brackets.\n", stderr);
+        exit(1);
+    }
     if(!(registers.known & RG_EAX) || registers.eax!=1)
     {
         registers.eax=1;
