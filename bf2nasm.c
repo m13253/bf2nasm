@@ -62,6 +62,9 @@ struct registers registers = {
 char buffer[BUFLEN] = "";
 size_t buffer_pointer = 0;
 size_t buffer_length = 0;
+unsigned int loops[0x10000] = {0};
+unsigned int nloop = 0;
+unsigned int ploop = 0;
 
 int fill_buffer(void);
 
@@ -271,7 +274,8 @@ void process(void)
                 push_ebx();
             }
             registers.known &= ~RG_ECX;
-            registers.changed |= RG_ECX;
+            registers.changed &= ~RG_ECX;
+            push_edi();
             fputs("\tmov\tecx, edi\n", stdout);
             if(!(registers.known & RG_EDX) || registers.edx!=1)
             {
@@ -282,7 +286,7 @@ void process(void)
             }
             fputs("\tint\t80h\n", stdout);
             registers.known &= ~RG_EAX;
-            registers.changed |= RG_EAX;
+            registers.changed &= ~RG_EAX;
 
             registers.pediabs = 0;
             registers.pedi = 0;
@@ -304,7 +308,8 @@ void process(void)
                 push_ebx();
             }
             registers.known &= ~RG_ECX;
-            registers.changed |= RG_ECX;
+            registers.changed &= ~RG_ECX;
+            push_edi();
             fputs("\tmov\tecx, edi\n", stdout);
             if(!(registers.known & RG_EDX) || registers.edx!=1)
             {
@@ -316,7 +321,14 @@ void process(void)
             fputs("\tint\t80h\n", stdout);
             registers.known &= ~RG_EAX;
             registers.known &= ~RG_EAX;
-            registers.changed |= RG_EAX;
+            registers.changed &= ~RG_EAX;
+            break;
+        case '[':
+            break;
+        case ']':
+            registers.known |= RG_PEDI;
+            registers.changed &= ~RG_PEDI
+            registers.pediabs = 1;
             break;
     }
 }
