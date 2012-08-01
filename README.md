@@ -15,15 +15,10 @@ Just clone this repo, and do what you want!
 	$ make debug
 
 ### Clean up useless files
-Remove all the intermediate files (e.g. `*.o`, `test.asm` and `test`),
-leaving `bf2nasm` not removed.
+Remove all the intermediate files (e.g. `*.o`, `test.asm` and `test`)
+and `bf2nasm`.
 
 	$ make clean
-
-### Clean up everything
-Remove all the intermediate files and `bf2nasm`, aka. do a full clean up.
-
-	$ make cleanall
 
 ### Compile your own brainfuck program:
 bf2nasm takes stdin as its input, and output the compiled nasm source
