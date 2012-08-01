@@ -369,8 +369,8 @@ void process(void)
             else if(read_buffer(0)==']')
                 if((registers.known & RG_PEDI) && registers.pediabs && registers.pedi)
                 {
-                    ++nloop;
                     printf("b%u:\n\tjmp\tb%u\n", nloop, nloop);
+                    ++nloop;
                     do
                         tmp=pop_buffer();
                     while(tmp!=EOF);
@@ -379,8 +379,8 @@ void process(void)
                 {
                     push_edi();
                     push_pedi();
-                    ++nloop;
                     printf("\tcmp\tbyte [edi], 0\n\tje\te%u\nb%u:\n\tjmp\tb%u\ne%u:\n", nloop, nloop, nloop, nloop);
+                    ++nloop;
                     registers.changed |= RG_PEDI;
                     registers.pediabs = 1;
                     registers.pedi = 0;
