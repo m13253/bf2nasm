@@ -12,14 +12,16 @@ all: bf2nasm
 clean:
 	$(RM) -f *.o *.asm awib bf2nasm
 
-.b.asm:
+%.asm: %.b bf2nasm
 	./bf2nasm < $< > $@
 
-.asm.o:
+%.o: %.asm
 	$(NASM) -f elf32 -o $@ $<
 
-.o:
+%: %.o
 	$(LD) -m elf_i386 -o $@ $<
+
+awib.asm: awib.b
 
 install: all
 	cp ./bf2nasm /usr/local/bin/bf2nasm
