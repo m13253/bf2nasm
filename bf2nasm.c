@@ -428,6 +428,7 @@ void process(void)
                 registers.pedi = 0;
                 ++ploop;
                 registers.known &= ~RG_EAX & ~RG_EBX & ~RG_EDX;
+                registers.esi_is_edi = registers.ecx_is_edi = 0;
             }
             break;
         case ']':
