@@ -21,8 +21,6 @@ clean:
 %: %.o
 	$(LD) -m elf_i386 -o $@ $<
 
-awib.asm: awib.b
-
 install: all
 	cp ./bf2nasm /usr/local/bin/bf2nasm
 
