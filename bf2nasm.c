@@ -407,11 +407,31 @@ void process(void)
                 registers.eax = 0;
                 dump_buffer(5);
             }
+            else if(match("->-<]", 0))
+            {
+                push_edi();
+                push_pedi();
+                fputs("\tmov\tal, byte [edi]\n\tsub\tbyte [edi+1], al\n\txor\teax, eax\n\tmov\tbyte [edi], al\n", stdout);
+                registers.known |= RG_EAX;
+                registers.changed &= ~RG_EAX;
+                registers.eax = 0;
+                dump_buffer(5);
+            }
             else if(match("->+>+<<]", 0))
             {
                 push_edi();
                 push_pedi();
                 fputs("\tmov\tal, byte [edi]\n\tadd\tbyte [edi+1], al\n\tadd\tbyte [edi+2], al\n\txor\teax, eax\n\tmov\tbyte [edi], al\n", stdout);
+                registers.known |= RG_EAX;
+                registers.changed &= ~RG_EAX;
+                registers.eax = 0;
+                dump_buffer(8);
+            }
+            else if(match("->->+<<]", 0))
+            {
+                push_edi();
+                push_pedi();
+                fputs("\tmov\tal, byte [edi]\n\tsub\tbyte [edi+1], al\n\tadd\tbyte [edi+2], al\n\txor\teax, eax\n\tmov\tbyte [edi], al\n", stdout);
                 registers.known |= RG_EAX;
                 registers.changed &= ~RG_EAX;
                 registers.eax = 0;
