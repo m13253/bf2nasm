@@ -391,6 +391,7 @@ void process(void)
                 }
             else if(match("-]", 0) || match("+]", 0))
             {
+                push_edi();
                 registers.known |= RG_PEDI;
                 registers.changed |= RG_PEDI;
                 registers.pediabs = 1;
